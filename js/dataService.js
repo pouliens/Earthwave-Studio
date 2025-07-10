@@ -34,6 +34,15 @@ class DataService {
                 },
                 currentValues: {},
                 historicalData: {}
+            },
+            gga08: {
+                id: 3,
+                datastreams: {
+                    conductivity: 13,
+                    tds: 38
+                },
+                currentValues: {},
+                historicalData: {}
             }
         };
         this.updateInterval = 30000; // 30 seconds
@@ -139,6 +148,10 @@ class DataService {
                 return 20 + baseWave * 2 + noise; // 20-22%
             case 'pressure':
                 return 1000 + baseWave * 20 + noise; // 1000-1020 mbar
+            case 'conductivity':
+                return 200 + baseWave * 300 + Math.abs(noise * 50); // 200-500 uS/cm
+            case 'tds':
+                return 100 + baseWave * 200 + Math.abs(noise * 30); // 100-300 mg/L
             default:
                 return 0;
         }
@@ -283,6 +296,11 @@ class DataService {
                 name: 'BGS GGERFS Barometer',
                 location: 'Glasgow, UK',
                 parameters: ['temperature', 'pressure']
+            },
+            gga08: {
+                name: 'BGS Groundwater Logger GGA08',
+                location: 'Glasgow, UK',
+                parameters: ['conductivity', 'tds']
             }
         };
     }

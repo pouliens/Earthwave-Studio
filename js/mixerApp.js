@@ -6,6 +6,8 @@ class MixerApp {
         
         this.availableDatastreams = new Map();
         this.isPlaying = false;
+        this.playbackInterval = null;
+        this.playbackSpeed = 1000; // 1 second per data point
         
         this.initializeInterface();
         this.setupEventListeners();
@@ -17,6 +19,7 @@ class MixerApp {
         this.mixerChannels = document.getElementById('mixer-channels');
         this.masterPlayButton = document.getElementById('master-play');
         this.masterVolumeSlider = document.getElementById('master-volume');
+        this.playbackSpeedSlider = document.getElementById('playback-speed');
         this.statusElement = document.getElementById('status');
         
         this.updateStatus('Initializing...');
@@ -31,6 +34,15 @@ class MixerApp {
         // Master volume
         this.masterVolumeSlider.addEventListener('input', (e) => {
             this.sonifier.setMasterVolume(parseInt(e.target.value));
+        });
+
+        // Playback speed
+        this.playbackSpeedSlider.addEventListener('input', (e) => {
+            this.playbackSpeed = parseInt(e.target.value);
+            if (this.isPlaying) {
+                // Restart playback animation with new speed
+                this.startPlaybackAnimation();
+            }
         });
 
         // Data service listener
@@ -237,6 +249,11 @@ class MixerApp {
         this.masterPlayButton.textContent = '⏸️ Stop All';
         this.masterPlayButton.classList.add('playing');
         this.renderMixerChannels();
+        
+        // Start visual playback indicator
+        this.visualizer.startPlaybackIndicator();
+        this.startPlaybackAnimation();
+        
         this.updateStatus('Playing');
     }
 
@@ -246,7 +263,56 @@ class MixerApp {
         this.masterPlayButton.textContent = '▶️ Play All';
         this.masterPlayButton.classList.remove('playing');
         this.renderMixerChannels();
+        
+        // Stop visual playback indicator
+        this.visualizer.stopPlaybackIndicator();
+        this.stopPlaybackAnimation();
+        
         this.updateStatus('Stopped');
+    }
+
+    startPlaybackAnimation() {
+        if (this.playbackInterval) {
+            clearInterval(this.playbackInterval);
+        }
+
+        this.playbackInterval = setInterval(() => {
+            if (this.isPlaying) {
+                this.visualizer.advancePlaybackIndicator();
+                
+                // Update sonification based on current playback position
+                this.updateSonificationFromPlayback();
+            }
+        }, this.playbackSpeed);
+    }
+
+    stopPlaybackAnimation() {
+        if (this.playbackInterval) {
+            clearInterval(this.playbackInterval);
+            this.playbackInterval = null;
+        }
+    }
+
+    updateSonificationFromPlayback() {
+        const currentIndex = this.visualizer.getPlaybackPosition();
+        const totalLength = this.visualizer.getDataLength();
+        
+        // Update playback position display
+        const positionElement = document.getElementById('playback-position');
+        if (positionElement) {
+            positionElement.textContent = `${currentIndex + 1} / ${totalLength}`;
+        }
+        
+        // Update each active datastream with the value at current playback position
+        this.availableDatastreams.forEach((datastream, datastreamId) => {
+            if (!datastream.isAdded) return;
+
+            const streamInfo = this.visualizer.activeDatastreams.get(datastreamId);
+            if (streamInfo && streamInfo.data && streamInfo.data[currentIndex]) {
+                const value = streamInfo.data[currentIndex].value;
+                this.sonifier.updateChannelValue(datastreamId, value);
+            }
+        });
     }
 
     startDataCollection() {
@@ -282,7 +348,9 @@ class MixerApp {
             methane: 'Methane',
             co2: 'Carbon Dioxide',
             oxygen: 'Oxygen',
-            pressure: 'Pressure'
+            pressure: 'Pressure',
+            conductivity: 'Conductivity',
+            tds: 'TDS (Total Dissolved Solids)'
         };
         return names[param] || param.charAt(0).toUpperCase() + param.slice(1);
     }
@@ -293,7 +361,9 @@ class MixerApp {
             methane: '%',
             co2: '%',
             oxygen: '%',
-            pressure: 'mbar'
+            pressure: 'mbar',
+            conductivity: 'uS/cm',
+            tds: 'mg/L'
         };
         return units[param] || '';
     }

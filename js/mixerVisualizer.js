@@ -54,9 +54,18 @@ class MixerVisualizer {
                         display: true,
                         text: 'Active Datastreams'
                     }
+                },
+                animation: {
+                    duration: 0 // Disable animations for smoother playback indicator
                 }
             }
         });
+
+        // Add playback indicator line
+        this.playbackIndicator = {
+            currentIndex: -1,
+            isVisible: false
+        };
     }
 
     addDatastream(datastreamId, name, unit) {
@@ -207,5 +216,117 @@ class MixerVisualizer {
         if (countElement) {
             countElement.textContent = this.activeDatastreams.size;
         }
+    }
+
+    startPlaybackIndicator() {
+        this.playbackIndicator.isVisible = true;
+        this.playbackIndicator.currentIndex = 0;
+        this.addPlaybackIndicatorDataset();
+        this.updatePlaybackIndicator();
+    }
+
+    stopPlaybackIndicator() {
+        this.playbackIndicator.isVisible = false;
+        this.playbackIndicator.currentIndex = -1;
+        this.removePlaybackIndicatorDataset();
+    }
+
+    addPlaybackIndicatorDataset() {
+        // Remove existing indicator if present
+        this.removePlaybackIndicatorDataset();
+
+        // Add vertical line dataset
+        const indicatorDataset = {
+            label: 'Now Playing',
+            data: [],
+            borderColor: '#FF4444',
+            backgroundColor: 'rgba(255, 68, 68, 0.2)',
+            borderWidth: 3,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            fill: false,
+            tension: 0,
+            type: 'line',
+            order: -1, // Draw on top
+            showLine: false // Hide the line, we'll draw vertical lines manually
+        };
+
+        this.chart.data.datasets.push(indicatorDataset);
+        this.playbackIndicator.datasetIndex = this.chart.data.datasets.length - 1;
+    }
+
+    removePlaybackIndicatorDataset() {
+        if (this.playbackIndicator.datasetIndex !== undefined) {
+            this.chart.data.datasets.splice(this.playbackIndicator.datasetIndex, 1);
+            delete this.playbackIndicator.datasetIndex;
+        }
+    }
+
+    updatePlaybackIndicator() {
+        if (!this.playbackIndicator.isVisible || this.chart.data.labels.length === 0) return;
+
+        // Update the current playing position
+        this.playbackIndicator.currentIndex = Math.min(
+            this.playbackIndicator.currentIndex,
+            this.chart.data.labels.length - 1
+        );
+
+        // Highlight current data points for all active datastreams
+        this.chart.data.datasets.forEach((dataset, index) => {
+            if (index === this.playbackIndicator.datasetIndex) return; // Skip indicator dataset
+            
+            // Reset all point styles
+            dataset.pointBackgroundColor = dataset.borderColor;
+            dataset.pointRadius = 3;
+            dataset.pointBorderWidth = 1;
+            
+            // Highlight current point
+            if (this.playbackIndicator.currentIndex >= 0 && 
+                this.playbackIndicator.currentIndex < dataset.data.length) {
+                
+                const pointColors = Array(dataset.data.length).fill(dataset.borderColor);
+                const pointRadii = Array(dataset.data.length).fill(3);
+                const pointBorderWidths = Array(dataset.data.length).fill(1);
+                
+                // Make current point larger and red
+                pointColors[this.playbackIndicator.currentIndex] = '#FF4444';
+                pointRadii[this.playbackIndicator.currentIndex] = 8;
+                pointBorderWidths[this.playbackIndicator.currentIndex] = 3;
+                
+                dataset.pointBackgroundColor = pointColors;
+                dataset.pointRadius = pointRadii;
+                dataset.pointBorderWidth = pointBorderWidths;
+            }
+        });
+
+        this.chart.update('none');
+    }
+
+    advancePlaybackIndicator() {
+        if (!this.playbackIndicator.isVisible) return;
+
+        this.playbackIndicator.currentIndex++;
+        
+        // Loop back to start if we've reached the end
+        if (this.playbackIndicator.currentIndex >= this.chart.data.labels.length) {
+            this.playbackIndicator.currentIndex = 0;
+        }
+        
+        this.updatePlaybackIndicator();
+    }
+
+    setPlaybackPosition(index) {
+        if (!this.playbackIndicator.isVisible) return;
+        
+        this.playbackIndicator.currentIndex = Math.max(0, Math.min(index, this.chart.data.labels.length - 1));
+        this.updatePlaybackIndicator();
+    }
+
+    getPlaybackPosition() {
+        return this.playbackIndicator.currentIndex;
+    }
+
+    getDataLength() {
+        return this.chart.data.labels.length;
     }
 }
