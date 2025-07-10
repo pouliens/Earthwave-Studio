@@ -18,7 +18,6 @@ class MixerApp {
         this.libraryList = document.getElementById('library-list');
         this.mixerChannels = document.getElementById('mixer-channels');
         this.masterPlayButton = document.getElementById('master-play');
-        this.beatToggleButton = document.getElementById('beat-toggle');
         this.masterVolumeSlider = document.getElementById('master-volume');
         this.beatTempoSlider = document.getElementById('beat-tempo');
         this.tempoDisplay = document.getElementById('tempo-display');
@@ -33,11 +32,6 @@ class MixerApp {
         // Master play button
         this.masterPlayButton.addEventListener('click', () => {
             this.toggleMasterPlay();
-        });
-
-        // Beat toggle button
-        this.beatToggleButton.addEventListener('click', () => {
-            this.toggleBeat();
         });
 
         // Master volume
@@ -426,17 +420,39 @@ class MixerApp {
         return values;
     }
 
-    toggleBeat() {
-        if (this.sonifier.isBeatEnabled()) {
-            this.sonifier.stopBeat();
-            this.beatToggleButton.textContent = '🥁 Beat Off';
-            this.beatToggleButton.classList.remove('playing');
-            this.updateStatus('Beat stopped');
-        } else {
-            this.sonifier.startBeat();
-            this.beatToggleButton.textContent = '🔇 Beat On';
-            this.beatToggleButton.classList.add('playing');
-            this.updateStatus(`Beat started at ${this.sonifier.getBeatTempo()} BPM`);
+    // Tempo synchronization and tab management methods
+    getCurrentTempo() {
+        return this.sonifier.getCurrentTempo();
+    }
+
+    onTabSwitch(tabName) {
+        // Handle tab switching - notify sonifier
+        this.sonifier.onTabSwitch(tabName);
+        
+        if (tabName === 'sensor-data') {
+            // When switching back to sensor data tab, ensure tempo synchronization
+            this.synchronizeTempoWithBeatMaker();
+            this.updateStatus('Sensor data tab active');
+        } else if (tabName === 'beat-maker') {
+            this.updateStatus('Beat maker tab active');
+        }
+    }
+
+    synchronizeTempoWithBeatMaker() {
+        // Listen for tempo changes from beat maker
+        document.addEventListener('beatMakerTempoChange', (e) => {
+            const newTempo = e.detail.bpm;
+            this.sonifier.setBeatTempo(newTempo);
+            this.updateTempoDisplay(newTempo);
+        });
+    }
+
+    updateTempoDisplay(tempo) {
+        if (this.tempoDisplay) {
+            this.tempoDisplay.textContent = tempo;
+        }
+        if (this.beatTempoSlider) {
+            this.beatTempoSlider.value = tempo;
         }
     }
 }

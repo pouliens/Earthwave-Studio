@@ -41,7 +41,15 @@ class MixerVisualizer {
                         display: true,
                         title: {
                             display: true,
-                            text: 'Value'
+                            text: 'Normalized Value (0-100%)'
+                        },
+                        min: -10,
+                        max: 110,
+                        ticks: {
+                            callback: function(value) {
+                                if (value < 0 || value > 100) return '';
+                                return value + '%';
+                            }
                         }
                     }
                 },
@@ -52,7 +60,17 @@ class MixerVisualizer {
                     },
                     title: {
                         display: true,
-                        text: 'Active Datastreams'
+                        text: 'Active Datastreams (Normalized 0-100%)'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const datasetLabel = context.dataset.label;
+                                const normalizedValue = context.parsed.y;
+                                const originalValue = context.dataset.originalValues?.[context.dataIndex] || 'N/A';
+                                return `${datasetLabel}: ${normalizedValue.toFixed(1)}% (${originalValue})`;
+                            }
+                        }
                     }
                 },
                 animation: {
@@ -77,10 +95,13 @@ class MixerVisualizer {
         const dataset = {
             label: `${name} (${unit})`,
             data: [],
+            originalValues: [], // Store original values for tooltips
             borderColor: color,
             backgroundColor: this.hexToRgba(color, 0.1),
             tension: 0.4,
-            fill: false
+            fill: false,
+            minValue: null,
+            maxValue: null
         };
 
         this.activeDatastreams.set(datastreamId, {
@@ -122,9 +143,17 @@ class MixerVisualizer {
         
         if (!dataset) return;
 
-        // Add new data point
-        dataset.data.push(value);
+        // Store original value
+        dataset.originalValues = dataset.originalValues || [];
+        dataset.originalValues.push(value);
         streamInfo.data.push({ value, timestamp });
+
+        // Auto-detect min/max for normalization
+        this.updateValueRange(dataset, value);
+
+        // Add normalized data point
+        const normalizedValue = this.normalizeToPercentage(value, dataset.minValue, dataset.maxValue);
+        dataset.data.push(normalizedValue);
 
         // Update labels if this is the first dataset or if we need more labels
         if (this.chart.data.labels.length < dataset.data.length) {
@@ -134,7 +163,11 @@ class MixerVisualizer {
         // Trim old data
         if (dataset.data.length > this.maxDataPoints) {
             dataset.data.shift();
+            dataset.originalValues.shift();
             streamInfo.data.shift();
+            
+            // Recalculate min/max after trimming
+            this.recalculateValueRange(dataset);
             
             // Trim labels if all datasets are at max length
             const minLength = Math.min(...this.chart.data.datasets.map(d => d.data.length));
@@ -144,6 +177,46 @@ class MixerVisualizer {
         }
 
         this.chart.update('none');
+    }
+
+    updateValueRange(dataset, newValue) {
+        if (dataset.minValue === null || newValue < dataset.minValue) {
+            dataset.minValue = newValue;
+        }
+        if (dataset.maxValue === null || newValue > dataset.maxValue) {
+            dataset.maxValue = newValue;
+        }
+        
+        // Add small buffer to avoid division by zero
+        if (dataset.maxValue === dataset.minValue) {
+            dataset.maxValue += Math.abs(dataset.minValue) * 0.1 + 1;
+        }
+    }
+
+    recalculateValueRange(dataset) {
+        if (!dataset.originalValues || dataset.originalValues.length === 0) return;
+        
+        dataset.minValue = Math.min(...dataset.originalValues);
+        dataset.maxValue = Math.max(...dataset.originalValues);
+        
+        // Add small buffer
+        if (dataset.maxValue === dataset.minValue) {
+            dataset.maxValue += Math.abs(dataset.minValue) * 0.1 + 1;
+        }
+
+        // Renormalize all existing data
+        for (let i = 0; i < dataset.originalValues.length; i++) {
+            dataset.data[i] = this.normalizeToPercentage(
+                dataset.originalValues[i], 
+                dataset.minValue, 
+                dataset.maxValue
+            );
+        }
+    }
+
+    normalizeToPercentage(value, min, max) {
+        if (max === min) return 50; // Default to middle if no variation
+        return ((value - min) / (max - min)) * 100;
     }
 
     loadHistoricalData(datastreamId, historicalData) {
@@ -156,11 +229,24 @@ class MixerVisualizer {
 
         // Clear existing data
         dataset.data = [];
+        dataset.originalValues = [];
         streamInfo.data = [];
 
-        // Add historical data
+        // Calculate min/max from historical data
+        const values = historicalData.map(entry => entry.value);
+        dataset.minValue = Math.min(...values);
+        dataset.maxValue = Math.max(...values);
+        
+        // Add small buffer to avoid division by zero
+        if (dataset.maxValue === dataset.minValue) {
+            dataset.maxValue += Math.abs(dataset.minValue) * 0.1 + 1;
+        }
+
+        // Add normalized historical data
         historicalData.forEach(entry => {
-            dataset.data.push(entry.value);
+            dataset.originalValues.push(entry.value);
+            const normalizedValue = this.normalizeToPercentage(entry.value, dataset.minValue, dataset.maxValue);
+            dataset.data.push(normalizedValue);
             streamInfo.data.push(entry);
         });
 

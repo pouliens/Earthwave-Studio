@@ -31,8 +31,11 @@ header h1 {
 }
 
 header p {
-    font-size: 1.2em;
+    font-size: 1.1em;
     opacity: 0.9;
+    line-height: 1.6;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
 /* Mixer Interface */
@@ -52,10 +55,21 @@ header p {
 }
 
 .datastream-library h3 {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     color: #333;
     border-bottom: 2px solid #667eea;
     padding-bottom: 10px;
+}
+
+.panel-description {
+    font-size: 0.9em;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #667eea;
 }
 
 .library-list {
@@ -129,16 +143,16 @@ header p {
 }
 
 .mixer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 20px;
     padding-bottom: 15px;
     border-bottom: 2px solid #667eea;
 }
 
 .mixer-header h3 {
+    margin-bottom: 10px;
     color: #333;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
 }
 
 .master-controls {
@@ -146,6 +160,7 @@ header p {
     align-items: center;
     gap: 15px;
     flex-wrap: wrap;
+    margin-top: 15px;
 }
 
 .master-controls button {
@@ -399,6 +414,362 @@ header p {
     }
     
     .help-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.tab-button {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.tab-button:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+.tab-button.active {
+    background: rgba(255,255,255,0.9);
+    color: #333;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Beat Maker Styles */
+.beat-maker-interface {
+    background: rgba(255,255,255,0.95);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.beat-maker-header {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #667eea;
+}
+
+.beat-maker-header h3 {
+    margin-bottom: 10px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.beat-maker-header p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.beat-maker-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.control-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 80px;
+}
+
+.control-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-2px);
+}
+
+.control-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.control-btn.play-btn {
+    background: #4CAF50;
+}
+
+.control-btn.play-btn:hover {
+    background: #45a049;
+}
+
+.control-btn.pause-btn {
+    background: #ff9800;
+}
+
+.control-btn.pause-btn:hover {
+    background: #e68900;
+}
+
+.control-btn.stop-btn {
+    background: #f44336;
+}
+
+.control-btn.stop-btn:hover {
+    background: #d32f2f;
+}
+
+.control-btn.clear-btn {
+    background: #9e9e9e;
+}
+
+.control-btn.clear-btn:hover {
+    background: #757575;
+}
+
+.tempo-sync-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.tempo-sync-control label {
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.tempo-sync-control input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+/* Sequencer Styles */
+.sequencer-container {
+    margin-bottom: 30px;
+}
+
+.sequencer-grid {
+    display: grid;
+    grid-template-columns: 120px repeat(8, 1fr);
+    gap: 2px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.step-numbers {
+    display: contents;
+}
+
+.step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 35px;
+    background: rgba(102, 126, 234, 0.2);
+    border-radius: 6px;
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.step-number.current {
+    background: #4CAF50;
+    color: white;
+    transform: scale(1.05);
+}
+
+.sequencer-row {
+    display: contents;
+}
+
+.sound-label {
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 6px;
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+}
+
+.step-btn {
+    width: 100%;
+    height: 35px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.8);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.step-btn:hover {
+    border-color: #667eea;
+    transform: scale(1.02);
+}
+
+.step-btn.active {
+    border-color: #333;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.step-btn.current-step {
+    border-width: 3px;
+    transform: scale(1.05);
+}
+
+.step-btn.active.current-step {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Preset Styles */
+.preset-section {
+    margin-top: 30px;
+}
+
+.preset-section h4 {
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.2em;
+}
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.preset-card {
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 10px;
+    padding: 20px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.preset-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+.preset-card h4 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.preset-card p {
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+.preset-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.preset-load-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.preset-load-btn:hover {
+    background: #45a049;
+    transform: translateY(-1px);
+}
+
+.preset-load-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsive Design for Beat Maker */
+@media (max-width: 1200px) {
+    .sequencer-grid {
+        grid-template-columns: 100px repeat(8, 1fr);
+    }
+    
+    .sound-label {
+        font-size: 12px;
+        padding: 0 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .tab-navigation {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .beat-maker-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .tempo-sync-control {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+    
+    .sequencer-grid {
+        grid-template-columns: 80px repeat(4, 1fr);
+        gap: 4px;
+    }
+    
+    .step-btn {
+        height: 35px;
+    }
+    
+    .step-number {
+        height: 35px;
+        font-size: 12px;
+    }
+    
+    .sound-label {
+        font-size: 11px;
+        padding: 0 8px;
+    }
+    
+    .preset-grid {
         grid-template-columns: 1fr;
     }
 }

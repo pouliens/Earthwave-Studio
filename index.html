@@ -11,13 +11,22 @@
     <div class="container">
         <header>
             <h1>🎵 Sensor Data Sonification Mixer</h1>
-            <p>Mix and match sensor datastreams to create unique soundscapes</p>
+            <p>Transform real-world environmental data into music! This tool connects to the British Geological Survey (BGS) sensor network, fetches the latest 50 readings from monitoring stations across the UK, and converts sensor measurements into musical sounds.</p>
         </header>
 
-        <div class="mixer-interface">
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('sensor-data')">📊 Sensor Data</button>
+            <button class="tab-button" onclick="switchTab('beat-maker')">🥁 Beat Maker</button>
+        </div>
+
+        <!-- Sensor Data Tab -->
+        <div id="sensor-data-tab" class="tab-content active">
+            <div class="mixer-interface">
             <!-- Left Panel: Available Datastreams -->
             <div class="datastream-library">
-                <h3>Available Datastreams</h3>
+                <h3>📡 Available Datastreams</h3>
+                <p class="panel-description">Click to add any sensor parameter to your mix.</p>
                 <div class="library-list" id="library-list">
                     <!-- Will be populated by JavaScript -->
                 </div>
@@ -26,10 +35,10 @@
             <!-- Center Panel: Active Mixer -->
             <div class="active-mixer">
                 <div class="mixer-header">
-                    <!-- <h3>Active Mix</h3> -->
+                    <h3>🎛️ Audio Mixer</h3>
+                    <p class="panel-description">Choose how each sensor maps to sound.</p>
                     <div class="master-controls">
                         <button id="master-play">▶️ Play All</button>
-                        <button id="beat-toggle">🥁 Beat Off</button>
                         <label>Master Volume: <input type="range" id="master-volume" min="0" max="100" value="50"></label>
                         <label>Beat Tempo: <input type="range" id="beat-tempo" min="60" max="200" value="120" step="5"> <span id="tempo-display">120</span> BPM</label>
                         <label>Playback Speed: <input type="range" id="playback-speed" min="100" max="2000" value="1000" step="100"></label>
@@ -54,7 +63,8 @@
 
             <!-- Right Panel: Visualization -->
             <div class="visualization-panel">
-                <h3>Visualization</h3>
+                <h3>📈 Live Data Visualization</h3>
+                <p class="panel-description">All datastreams are normalized to 0-100%. The red dot shows which data point is currently playing as sound.</p>
                 <div class="chart-container">
                     <canvas id="main-chart"></canvas>
                 </div>
@@ -75,21 +85,57 @@
             </div>
         </div>
 
-        <!-- Help Section -->
-        <div class="help-section">
-            <h3>How to Use</h3>
-            <div class="help-grid">
-                <div class="help-item">
-                    <strong>1. Select Data</strong>
-                    <p>Click datastreams from the library to add them to your mix</p>
+            <!-- Help Section -->
+            <div class="help-section">
+                <h3>How to Use</h3>
+                <div class="help-grid">
+                    <div class="help-item">
+                        <strong>1. Select Data</strong>
+                        <p>Click datastreams from the library to add them to your mix</p>
+                    </div>
+                    <div class="help-item">
+                        <strong>2. Choose Sound</strong>
+                        <p>Select how each datastream maps to audio (pitch, rhythm, volume, etc.)</p>
+                    </div>
+                    <div class="help-item">
+                        <strong>3. Mix & Play</strong>
+                        <p>Adjust individual volumes and play your data symphony</p>
+                    </div>
                 </div>
-                <div class="help-item">
-                    <strong>2. Choose Sound</strong>
-                    <p>Select how each datastream maps to audio (pitch, rhythm, volume, etc.)</p>
+            </div>
+        </div>
+
+        <!-- Beat Maker Tab -->
+        <div id="beat-maker-tab" class="tab-content">
+            <div class="beat-maker-interface">
+                <div class="beat-maker-header">
+                    <h3>🥁 Beat Maker</h3>
+                    <p>Create rhythmic patterns to accompany your sensor data sonification</p>
+                    <div class="beat-maker-controls">
+                        <button id="beat-play-btn" class="control-btn play-btn">Play</button>
+                        <button id="beat-pause-btn" class="control-btn pause-btn">Pause</button>
+                        <button id="beat-stop-btn" class="control-btn stop-btn">Stop</button>
+                        <button id="beat-clear-btn" class="control-btn clear-btn">Clear</button>
+                        <div class="tempo-sync-control">
+                            <label>
+                                <input type="checkbox" id="tempo-sync-checkbox" checked>
+                                Sync with Sensor Tempo
+                            </label>
+                        </div>
+                    </div>
                 </div>
-                <div class="help-item">
-                    <strong>3. Mix & Play</strong>
-                    <p>Adjust individual volumes and play your data symphony</p>
+
+                <div class="sequencer-container">
+                    <div class="sequencer-grid" id="sequencer-grid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="preset-section">
+                    <h4>Preset Beats</h4>
+                    <div class="preset-grid" id="preset-grid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,6 +144,8 @@
     <script src="js/dataService.js"></script>
     <script src="js/mixerVisualizer.js"></script>
     <script src="js/mixerSonifier.js"></script>
+    <script src="js/beatMaker.js"></script>
+    <script src="js/tabManager.js"></script>
     <script src="js/mixerApp.js"></script>
 </body>
 </html>

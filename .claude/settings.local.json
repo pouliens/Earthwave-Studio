@@ -5,7 +5,8 @@
       "mcp__bgs-sensors-nodejs__find_sensors",
       "mcp__bgs-sensors-nodejs__get_sensor_details",
       "mcp__bgs-sensors-nodejs__query_api",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

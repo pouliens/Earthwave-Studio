@@ -22,12 +22,8 @@ class MixerSonifier {
         this.currentScale = 'pentatonic';
         this.baseFrequency = 220; // A3
         
-        // Beat/rhythm system
-        this.beatEnabled = false;
-        this.beatInterval = null;
+        // Tempo synchronization with beat maker
         this.beatTempo = 120; // BPM
-        this.beatGain = null;
-        this.beatOscillator = null;
 
         this.initializeAudio();
     }
@@ -40,9 +36,6 @@ class MixerSonifier {
             this.masterGain = this.audioContext.createGain();
             this.masterGain.gain.value = 0.5;
             this.masterGain.connect(this.audioContext.destination);
-            
-            // Initialize beat system
-            this.initializeBeatSystem();
             
             console.log('Mixer audio system initialized');
         } catch (error) {
@@ -393,178 +386,51 @@ class MixerSonifier {
         return Object.keys(this.scales);
     }
 
-    initializeBeatSystem() {
-        if (!this.audioContext) return;
-
-        // Create multiple oscillators for richer drum sounds
-        this.kickOscillator = this.audioContext.createOscillator();
-        this.snareOscillator = this.audioContext.createOscillator();
-        this.hihatOscillator = this.audioContext.createOscillator();
-        
-        // Create individual gain nodes
-        this.kickGain = this.audioContext.createGain();
-        this.snareGain = this.audioContext.createGain();
-        this.hihatGain = this.audioContext.createGain();
-        
-        // Create filters for better drum character
-        this.kickFilter = this.audioContext.createBiquadFilter();
-        this.snareFilter = this.audioContext.createBiquadFilter();
-        this.hihatFilter = this.audioContext.createBiquadFilter();
-        
-        // Set up kick drum (deep and punchy)
-        this.kickOscillator.type = 'sine';
-        this.kickOscillator.frequency.value = 40; // Very low frequency
-        this.kickFilter.type = 'lowpass';
-        this.kickFilter.frequency.value = 100; // Cut high frequencies
-        this.kickFilter.Q.value = 2; // Add some resonance
-        this.kickOscillator.connect(this.kickFilter);
-        this.kickFilter.connect(this.kickGain);
-        this.kickGain.connect(this.masterGain);
-        
-        // Set up snare drum (snappy and bright)
-        this.snareOscillator.type = 'square';
-        this.snareOscillator.frequency.value = 200;
-        this.snareFilter.type = 'highpass';
-        this.snareFilter.frequency.value = 300; // Cut low frequencies
-        this.snareFilter.Q.value = 5; // Very sharp and snappy
-        this.snareOscillator.connect(this.snareFilter);
-        this.snareFilter.connect(this.snareGain);
-        this.snareGain.connect(this.masterGain);
-        
-        // Set up hi-hat (crisp and bright)
-        this.hihatOscillator.type = 'sawtooth';
-        this.hihatOscillator.frequency.value = 10000; // Very high frequency
-        this.hihatFilter.type = 'highpass';
-        this.hihatFilter.frequency.value = 8000;
-        this.hihatFilter.Q.value = 3;
-        this.hihatOscillator.connect(this.hihatFilter);
-        this.hihatFilter.connect(this.hihatGain);
-        this.hihatGain.connect(this.masterGain);
-        
-        // Initialize gains to 0
-        this.kickGain.gain.value = 0;
-        this.snareGain.gain.value = 0;
-        this.hihatGain.gain.value = 0;
-        
-        // Start all oscillators
-        this.kickOscillator.start();
-        this.snareOscillator.start();
-        this.hihatOscillator.start();
-    }
-
-    startBeat() {
-        if (!this.audioContext || this.beatEnabled) return;
-        
-        this.beatEnabled = true;
-        this.scheduleBeatLoop();
-    }
-
-    stopBeat() {
-        if (!this.beatEnabled) return;
-        
-        this.beatEnabled = false;
-        if (this.beatInterval) {
-            clearInterval(this.beatInterval);
-            this.beatInterval = null;
-        }
-    }
-
-    scheduleBeatLoop() {
-        if (this.beatInterval) {
-            clearInterval(this.beatInterval);
-        }
-
-        const beatIntervalMs = (60 / this.beatTempo) * 1000; // Convert BPM to milliseconds
-        let beatCount = 0;
-
-        this.beatInterval = setInterval(() => {
-            if (!this.beatEnabled || !this.audioContext) return;
-
-            const now = this.audioContext.currentTime;
-            
-            // Create different patterns for different beats in the measure
-            const isKick = beatCount % 4 === 0; // Kick on 1 and 3
-            const isSnare = beatCount % 4 === 2; // Snare on 2 and 4
-            const isHiHat = beatCount % 2 === 1; // Hi-hat on off-beats
-
-            if (isKick) {
-                // Deep, punchy kick drum
-                this.playKickDrum();
-            } else if (isSnare) {
-                // Snappy snare drum
-                this.playSnareDrum();
-            } else if (isHiHat) {
-                // Crisp hi-hat
-                this.playHiHat();
-            }
-
-            beatCount++;
-        }, beatIntervalMs);
-    }
-
-    playKickDrum() {
-        if (!this.audioContext) return;
-
-        const now = this.audioContext.currentTime;
-        
-        // Frequency sweep for punch (40Hz -> 20Hz)
-        this.kickOscillator.frequency.setValueAtTime(40, now);
-        this.kickOscillator.frequency.exponentialRampToValueAtTime(20, now + 0.05);
-        
-        // Volume envelope - punchy attack, longer decay
-        this.kickGain.gain.setValueAtTime(0, now);
-        this.kickGain.gain.setValueAtTime(0.8, now + 0.005); // Very fast attack
-        this.kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3); // Long decay
-    }
-
-    playSnareDrum() {
-        if (!this.audioContext) return;
-
-        const now = this.audioContext.currentTime;
-        
-        // Add frequency modulation for snappy character
-        this.snareOscillator.frequency.setValueAtTime(200, now);
-        this.snareOscillator.frequency.exponentialRampToValueAtTime(150, now + 0.02);
-        
-        // Filter sweep for snap
-        this.snareFilter.frequency.setValueAtTime(800, now);
-        this.snareFilter.frequency.exponentialRampToValueAtTime(300, now + 0.05);
-        
-        // Sharp attack, quick decay
-        this.snareGain.gain.setValueAtTime(0, now);
-        this.snareGain.gain.setValueAtTime(0.6, now + 0.002); // Very sharp attack
-        this.snareGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08); // Quick decay
-    }
-
-    playHiHat() {
-        if (!this.audioContext) return;
-
-        const now = this.audioContext.currentTime;
-        
-        // High frequency modulation for metallic character
-        this.hihatOscillator.frequency.setValueAtTime(12000, now);
-        this.hihatOscillator.frequency.exponentialRampToValueAtTime(8000, now + 0.01);
-        
-        // Very sharp attack, very quick decay
-        this.hihatGain.gain.setValueAtTime(0, now);
-        this.hihatGain.gain.setValueAtTime(0.3, now + 0.001); // Instant attack
-        this.hihatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03); // Very quick decay
-    }
-
+    // Tempo synchronization methods
     setBeatTempo(bpm) {
-        this.beatTempo = Math.max(60, Math.min(200, bpm)); // Limit between 60-200 BPM
+        this.beatTempo = Math.max(60, Math.min(200, bpm));
         
-        if (this.beatEnabled) {
-            // Restart beat loop with new tempo
-            this.scheduleBeatLoop();
-        }
+        // Notify beat maker about tempo change
+        const tempoChangeEvent = new CustomEvent('tempoChange', {
+            detail: { bpm: this.beatTempo }
+        });
+        document.dispatchEvent(tempoChangeEvent);
     }
 
-    getBeatTempo() {
+    getCurrentTempo() {
         return this.beatTempo;
     }
 
-    isBeatEnabled() {
-        return this.beatEnabled;
+    // Method to be called by tab manager and mixer app
+    onTabSwitch(tabName) {
+        // Handle any necessary cleanup or initialization when switching tabs
+        if (tabName === 'sensor-data') {
+            // Ensure tempo is synchronized when returning to sensor data tab
+            this.synchronizeWithBeatMaker();
+        }
+    }
+
+    synchronizeWithBeatMaker() {
+        // Get current tempo from beat maker if it exists and sync is enabled
+        if (window.beatMaker && window.beatMaker.tempoSynced) {
+            const beatMakerTempo = window.beatMaker.getBPM();
+            if (beatMakerTempo !== this.beatTempo) {
+                this.beatTempo = beatMakerTempo;
+                // Update the UI tempo display
+                this.updateTempoDisplay();
+            }
+        }
+    }
+
+    updateTempoDisplay() {
+        const tempoDisplay = document.getElementById('tempo-display');
+        const tempoSlider = document.getElementById('beat-tempo');
+        
+        if (tempoDisplay) {
+            tempoDisplay.textContent = this.beatTempo;
+        }
+        if (tempoSlider) {
+            tempoSlider.value = this.beatTempo;
+        }
     }
 }
