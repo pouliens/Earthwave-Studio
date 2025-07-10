@@ -18,7 +18,10 @@ class MixerApp {
         this.libraryList = document.getElementById('library-list');
         this.mixerChannels = document.getElementById('mixer-channels');
         this.masterPlayButton = document.getElementById('master-play');
+        this.beatToggleButton = document.getElementById('beat-toggle');
         this.masterVolumeSlider = document.getElementById('master-volume');
+        this.beatTempoSlider = document.getElementById('beat-tempo');
+        this.tempoDisplay = document.getElementById('tempo-display');
         this.playbackSpeedSlider = document.getElementById('playback-speed');
         this.musicalScaleSelect = document.getElementById('musical-scale');
         this.statusElement = document.getElementById('status');
@@ -32,9 +35,21 @@ class MixerApp {
             this.toggleMasterPlay();
         });
 
+        // Beat toggle button
+        this.beatToggleButton.addEventListener('click', () => {
+            this.toggleBeat();
+        });
+
         // Master volume
         this.masterVolumeSlider.addEventListener('input', (e) => {
             this.sonifier.setMasterVolume(parseInt(e.target.value));
+        });
+
+        // Beat tempo
+        this.beatTempoSlider.addEventListener('input', (e) => {
+            const tempo = parseInt(e.target.value);
+            this.sonifier.setBeatTempo(tempo);
+            this.tempoDisplay.textContent = tempo;
         });
 
         // Playback speed
@@ -409,6 +424,20 @@ class MixerApp {
             }
         });
         return values;
+    }
+
+    toggleBeat() {
+        if (this.sonifier.isBeatEnabled()) {
+            this.sonifier.stopBeat();
+            this.beatToggleButton.textContent = '🥁 Beat Off';
+            this.beatToggleButton.classList.remove('playing');
+            this.updateStatus('Beat stopped');
+        } else {
+            this.sonifier.startBeat();
+            this.beatToggleButton.textContent = '🔇 Beat On';
+            this.beatToggleButton.classList.add('playing');
+            this.updateStatus(`Beat started at ${this.sonifier.getBeatTempo()} BPM`);
+        }
     }
 }
 

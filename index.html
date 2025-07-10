@@ -26,10 +26,12 @@
             <!-- Center Panel: Active Mixer -->
             <div class="active-mixer">
                 <div class="mixer-header">
-                    <h3>Active Mix</h3>
+                    <!-- <h3>Active Mix</h3> -->
                     <div class="master-controls">
                         <button id="master-play">▶️ Play All</button>
+                        <button id="beat-toggle">🥁 Beat Off</button>
                         <label>Master Volume: <input type="range" id="master-volume" min="0" max="100" value="50"></label>
+                        <label>Beat Tempo: <input type="range" id="beat-tempo" min="60" max="200" value="120" step="5"> <span id="tempo-display">120</span> BPM</label>
                         <label>Playback Speed: <input type="range" id="playback-speed" min="100" max="2000" value="1000" step="100"></label>
                         <label>Musical Scale: 
                             <select id="musical-scale">
