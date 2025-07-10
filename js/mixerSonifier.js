@@ -7,8 +7,20 @@ class MixerSonifier {
         
         // Available audio mappings
         this.audioMappings = [
-            'pitch', 'volume', 'filter', 'panning', 'rhythm'
+            'pitch', 'volume', 'filter', 'panning', 'rhythm', 'melody', 'bass', 'harmony'
         ];
+
+        // Musical scales
+        this.scales = {
+            major: [0, 2, 4, 5, 7, 9, 11],
+            minor: [0, 2, 3, 5, 7, 8, 10],
+            pentatonic: [0, 2, 4, 7, 9],
+            blues: [0, 3, 5, 6, 7, 10],
+            dorian: [0, 2, 3, 5, 7, 9, 10]
+        };
+
+        this.currentScale = 'pentatonic';
+        this.baseFrequency = 220; // A3
 
         this.initializeAudio();
     }
@@ -35,10 +47,21 @@ class MixerSonifier {
         const gainNode = this.audioContext.createGain();
         const pannerNode = this.audioContext.createStereoPanner();
         const filter = this.audioContext.createBiquadFilter();
+        const delayNode = this.audioContext.createDelay(1.0);
+        const delayGain = this.audioContext.createGain();
+        const reverbConvolver = this.audioContext.createConvolver();
 
-        // Set up audio chain
+        // Set up audio chain with effects
         oscillator.connect(filter);
         filter.connect(gainNode);
+        
+        // Add delay effect
+        gainNode.connect(delayNode);
+        delayNode.connect(delayGain);
+        delayGain.connect(gainNode); // Feedback
+        delayNode.delayTime.value = 0.3;
+        delayGain.gain.value = 0.2;
+        
         gainNode.connect(pannerNode);
         pannerNode.connect(this.masterGain);
 
@@ -60,11 +83,14 @@ class MixerSonifier {
             gainNode,
             pannerNode,
             filter,
+            delayNode,
+            delayGain,
             isPlaying: false,
             volume: 0.5,
             currentValue: 0,
-            minValue: 0,
-            maxValue: 100,
+            minValue: null, // Auto-detect from data
+            maxValue: null, // Auto-detect from data
+            valueHistory: [], // Track recent values for auto-scaling
             isStarted: false
         };
 
@@ -92,6 +118,22 @@ class MixerSonifier {
         const channel = this.activeChannels.get(datastreamId);
         if (!channel || !this.audioContext) return;
 
+        // Update value history for auto-scaling
+        channel.valueHistory.push(value);
+        if (channel.valueHistory.length > 50) {
+            channel.valueHistory.shift(); // Keep last 50 values
+        }
+
+        // Auto-detect min/max from recent history
+        if (channel.valueHistory.length >= 10) {
+            const sortedValues = [...channel.valueHistory].sort((a, b) => a - b);
+            const percentile5 = sortedValues[Math.floor(sortedValues.length * 0.05)];
+            const percentile95 = sortedValues[Math.floor(sortedValues.length * 0.95)];
+            
+            channel.minValue = percentile5;
+            channel.maxValue = percentile95;
+        }
+
         channel.currentValue = value;
 
         if (!channel.isPlaying) return;
@@ -105,14 +147,38 @@ class MixerSonifier {
                 channel.oscillator.frequency.setTargetAtTime(frequency, now, 0.1);
                 break;
 
+            case 'melody':
+                const note = this.valueToNote(normalizedValue);
+                const melodyFreq = this.noteToFrequency(note);
+                channel.oscillator.frequency.setTargetAtTime(melodyFreq, now, 0.1);
+                channel.oscillator.type = 'triangle';
+                break;
+
+            case 'bass':
+                const bassNote = this.valueToNote(normalizedValue, -2); // Two octaves lower
+                const bassFreq = this.noteToFrequency(bassNote);
+                channel.oscillator.frequency.setTargetAtTime(bassFreq, now, 0.1);
+                channel.oscillator.type = 'square';
+                break;
+
+            case 'harmony':
+                const harmonyNote = this.valueToNote(normalizedValue, 1); // One octave higher
+                const harmonyFreq = this.noteToFrequency(harmonyNote);
+                channel.oscillator.frequency.setTargetAtTime(harmonyFreq, now, 0.1);
+                channel.oscillator.type = 'sawtooth';
+                break;
+
             case 'volume':
-                const volume = normalizedValue * channel.volume;
+                const volume = Math.max(0.1, normalizedValue) * channel.volume;
                 channel.gainNode.gain.setTargetAtTime(volume, now, 0.1);
                 break;
 
             case 'filter':
                 const filterFreq = 200 + (normalizedValue * 2000); // 200-2200 Hz
                 channel.filter.frequency.setTargetAtTime(filterFreq, now, 0.1);
+                // Add resonance variation
+                const resonance = 1 + (normalizedValue * 10);
+                channel.filter.Q.value = resonance;
                 break;
 
             case 'panning':
@@ -121,10 +187,28 @@ class MixerSonifier {
                 break;
 
             case 'rhythm':
-                // Rhythm affects volume pulsing
+                // Rhythm affects volume pulsing and delay time
                 this.updateRhythm(channel, normalizedValue);
+                const delayTime = 0.1 + (normalizedValue * 0.4); // 0.1-0.5 seconds
+                channel.delayNode.delayTime.setTargetAtTime(delayTime, now, 0.1);
                 break;
         }
+    }
+
+    valueToNote(normalizedValue, octaveOffset = 0) {
+        const scale = this.scales[this.currentScale];
+        const noteIndex = Math.floor(normalizedValue * scale.length);
+        const scaleNote = scale[Math.min(noteIndex, scale.length - 1)];
+        
+        // Add octave variation based on value
+        const octave = 4 + octaveOffset + Math.floor(normalizedValue * 2);
+        
+        return scaleNote + (octave * 12);
+    }
+
+    noteToFrequency(midiNote) {
+        // Convert MIDI note to frequency: A4 (440Hz) is MIDI note 69
+        return this.baseFrequency * Math.pow(2, (midiNote - 57) / 12);
     }
 
     updateRhythm(channel, normalizedValue) {
@@ -287,5 +371,15 @@ class MixerSonifier {
 
     getAllChannels() {
         return Array.from(this.activeChannels.values());
+    }
+
+    setMusicalScale(scaleName) {
+        if (this.scales[scaleName]) {
+            this.currentScale = scaleName;
+        }
+    }
+
+    getAvailableScales() {
+        return Object.keys(this.scales);
     }
 }

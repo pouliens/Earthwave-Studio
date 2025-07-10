@@ -20,6 +20,7 @@ class MixerApp {
         this.masterPlayButton = document.getElementById('master-play');
         this.masterVolumeSlider = document.getElementById('master-volume');
         this.playbackSpeedSlider = document.getElementById('playback-speed');
+        this.musicalScaleSelect = document.getElementById('musical-scale');
         this.statusElement = document.getElementById('status');
         
         this.updateStatus('Initializing...');
@@ -43,6 +44,12 @@ class MixerApp {
                 // Restart playback animation with new speed
                 this.startPlaybackAnimation();
             }
+        });
+
+        // Musical scale
+        this.musicalScaleSelect.addEventListener('change', (e) => {
+            this.sonifier.setMusicalScale(e.target.value);
+            this.updateStatus(`Changed to ${e.target.value} scale`);
         });
 
         // Data service listener
@@ -371,10 +378,13 @@ class MixerApp {
     formatMappingName(mapping) {
         const names = {
             pitch: 'Pitch/Frequency',
+            melody: 'Melody (Musical)',
+            bass: 'Bass Line',
+            harmony: 'Harmony',
             volume: 'Volume',
             filter: 'Filter/Timbre',
             panning: 'Stereo Panning',
-            rhythm: 'Rhythm/Pulse'
+            rhythm: 'Rhythm/Delay'
         };
         return names[mapping] || mapping;
     }
