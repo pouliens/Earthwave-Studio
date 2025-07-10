@@ -351,11 +351,8 @@ class MixerVisualizer {
     updatePlaybackIndicator() {
         if (!this.playbackIndicator.isVisible || this.chart.data.labels.length === 0) return;
 
-        // Update the current playing position
-        this.playbackIndicator.currentIndex = Math.min(
-            this.playbackIndicator.currentIndex,
-            this.chart.data.labels.length - 1
-        );
+        // Don't constrain the current index here - let advancePlaybackIndicator handle looping
+        // The currentIndex should already be properly managed by advancePlaybackIndicator()
 
         // Highlight current data points for all active datastreams
         this.chart.data.datasets.forEach((dataset, index) => {
@@ -391,12 +388,19 @@ class MixerVisualizer {
     advancePlaybackIndicator() {
         if (!this.playbackIndicator.isVisible) return;
 
+        const previousIndex = this.playbackIndicator.currentIndex;
         this.playbackIndicator.currentIndex++;
         
         // Loop back to start if we've reached the end (use actual max data length)
         const maxLength = this.getDataLength();
         if (this.playbackIndicator.currentIndex >= maxLength) {
+            console.log(`Looping back to start - reached end of data (index: ${this.playbackIndicator.currentIndex}, length: ${maxLength})`);
             this.playbackIndicator.currentIndex = 0;
+        }
+        
+        // Debug logging to track advancement
+        if (this.playbackIndicator.currentIndex !== previousIndex + 1 && this.playbackIndicator.currentIndex !== 0) {
+            console.log(`Playback position changed unexpectedly: ${previousIndex} -> ${this.playbackIndicator.currentIndex}`);
         }
         
         this.updatePlaybackIndicator();
@@ -405,7 +409,8 @@ class MixerVisualizer {
     setPlaybackPosition(index) {
         if (!this.playbackIndicator.isVisible) return;
         
-        this.playbackIndicator.currentIndex = Math.max(0, Math.min(index, this.chart.data.labels.length - 1));
+        const maxLength = this.getDataLength();
+        this.playbackIndicator.currentIndex = Math.max(0, Math.min(index, maxLength - 1));
         this.updatePlaybackIndicator();
     }
 
@@ -424,6 +429,7 @@ class MixerVisualizer {
             }
         });
         
-        return maxLength;
+        // Ensure we always have at least 1 to prevent division by zero or infinite loops
+        return Math.max(1, maxLength);
     }
 }

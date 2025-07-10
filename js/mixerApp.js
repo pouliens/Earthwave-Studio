@@ -363,9 +363,20 @@ class MixerApp {
             if (!datastream.isAdded) return;
 
             const streamInfo = this.visualizer.activeDatastreams.get(datastreamId);
-            if (streamInfo && streamInfo.data) {
-                // Use the data if available at current index, otherwise use the last available value
-                const dataIndex = Math.min(currentIndex, streamInfo.data.length - 1);
+            if (streamInfo && streamInfo.data && streamInfo.data.length > 0) {
+                // Ensure we have valid data at the current index
+                let dataIndex = currentIndex;
+                
+                // Handle case where currentIndex might be beyond the data length
+                if (dataIndex >= streamInfo.data.length) {
+                    dataIndex = streamInfo.data.length - 1;
+                }
+                
+                // Handle case where currentIndex is negative (shouldn't happen but be safe)
+                if (dataIndex < 0) {
+                    dataIndex = 0;
+                }
+                
                 if (streamInfo.data[dataIndex]) {
                     const value = streamInfo.data[dataIndex].value;
                     this.sonifier.updateChannelValue(datastreamId, value);
