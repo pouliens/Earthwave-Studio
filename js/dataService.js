@@ -48,6 +48,7 @@ class DataService {
         this.updateInterval = 30000; // 30 seconds
         this.isRunning = false;
         this.listeners = [];
+        this.usingSimulation = false;
     }
 
     addListener(callback) {
@@ -103,6 +104,40 @@ class DataService {
                     timestamp: obs.phenomenonTime
                 }));
             }
+            return [];
+        } catch (error) {
+            console.error(`Error fetching historical data for datastream ${datastreamId}:`, error);
+            return [];
+        }
+    }
+
+    async fetchSynchronizedHistoricalData(datastreamId, count = 50) {
+        try {
+            console.log(`Fetching last ${count} real observations for datastream ${datastreamId}...`);
+            
+            // Directly fetch the last N observations, ordered by time descending
+            const response = await fetch(
+                `${this.baseUrl}/Datastreams(${datastreamId})/Observations?$top=${count}&$orderby=phenomenonTime desc`
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            if (data.value && data.value.length > 0) {
+                // Reverse to get chronological order (oldest to newest)
+                const formattedData = data.value.reverse().map(obs => ({
+                    value: obs.result,
+                    timestamp: obs.phenomenonTime
+                }));
+                
+                console.log(`Fetched ${formattedData.length} real observations for ${datastreamId}`);
+                console.log(`Time range: ${formattedData[0].timestamp} to ${formattedData[formattedData.length-1].timestamp}`);
+                return formattedData;
+            }
+            
+            console.log(`No observations found for datastream ${datastreamId}`);
             return [];
         } catch (error) {
             console.error(`Error fetching historical data for datastream ${datastreamId}:`, error);
@@ -167,12 +202,18 @@ class DataService {
                 results[sensorKey] = await this.fetchSensorData(sensorKey);
             }
             
+            // Reset simulation flag on successful data fetch
+            this.usingSimulation = false;
+            
             // Notify listeners with new data
             this.notifyListeners(results);
             
             return results;
         } catch (error) {
             console.error('Error updating sensor data:', error);
+            
+            // Mark as using simulation mode
+            this.usingSimulation = true;
             
             // Fallback to simulated data
             const simulatedResults = {};
@@ -189,44 +230,6 @@ class DataService {
         }
     }
 
-    async loadInitialHistoricalData() {
-        console.log('Loading initial historical data...');
-        
-        for (const sensorKey of Object.keys(this.sensorData)) {
-            const sensor = this.sensorData[sensorKey];
-            sensor.historicalData = {};
-            
-            for (const [param, datastreamId] of Object.entries(sensor.datastreams)) {
-                console.log(`Loading historical data for ${sensorKey} ${param}...`);
-                const historicalData = await this.fetchHistoricalData(datastreamId, 50);
-                
-                if (historicalData.length > 0) {
-                    sensor.historicalData[param] = historicalData;
-                } else {
-                    // Generate simulated historical data as fallback
-                    sensor.historicalData[param] = this.generateSimulatedHistoricalData(param, 50);
-                }
-                
-                // Small delay to avoid overwhelming the API
-                await new Promise(resolve => setTimeout(resolve, 200));
-            }
-        }
-        
-        console.log('Historical data loaded');
-    }
-
-    generateSimulatedHistoricalData(param, count) {
-        const data = [];
-        const now = new Date();
-        
-        for (let i = count - 1; i >= 0; i--) {
-            const timestamp = new Date(now.getTime() - i * 30 * 60 * 1000).toISOString(); // 30 minutes apart
-            const value = this.simulateValue(param);
-            data.push({ value, timestamp });
-        }
-        
-        return data;
-    }
 
     start() {
         if (this.isRunning) return;
@@ -234,19 +237,13 @@ class DataService {
         this.isRunning = true;
         console.log('Starting data service...');
         
-        // Load initial historical data first
-        this.loadInitialHistoricalData().then(() => {
-            // Notify listeners with historical data
-            this.notifyListeners(this.getCurrentDataWithHistory());
-            
-            // Then start regular updates
+        // Start with immediate sensor data update (no bulk historical loading)
+        this.updateAllSensors();
+        
+        // Set up periodic updates for live data
+        this.intervalId = setInterval(() => {
             this.updateAllSensors();
-            
-            // Set up periodic updates
-            this.intervalId = setInterval(() => {
-                this.updateAllSensors();
-            }, this.updateInterval);
-        });
+        }, this.updateInterval);
     }
 
     stop() {
@@ -268,16 +265,6 @@ class DataService {
         return results;
     }
 
-    getCurrentDataWithHistory() {
-        const results = {};
-        for (const [sensorKey, sensor] of Object.entries(this.sensorData)) {
-            results[sensorKey] = { 
-                ...sensor.currentValues,
-                historical: sensor.historicalData
-            };
-        }
-        return results;
-    }
 
     // Helper method to get sensor info
     getSensorInfo() {
@@ -303,5 +290,10 @@ class DataService {
                 parameters: ['conductivity', 'tds']
             }
         };
+    }
+
+    // Check if currently using simulation mode
+    isUsingSimulation() {
+        return this.usingSimulation || false;
     }
 }

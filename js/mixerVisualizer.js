@@ -393,8 +393,9 @@ class MixerVisualizer {
 
         this.playbackIndicator.currentIndex++;
         
-        // Loop back to start if we've reached the end
-        if (this.playbackIndicator.currentIndex >= this.chart.data.labels.length) {
+        // Loop back to start if we've reached the end (use actual max data length)
+        const maxLength = this.getDataLength();
+        if (this.playbackIndicator.currentIndex >= maxLength) {
             this.playbackIndicator.currentIndex = 0;
         }
         
@@ -413,6 +414,16 @@ class MixerVisualizer {
     }
 
     getDataLength() {
-        return this.chart.data.labels.length;
+        // Return the maximum length among all active datastreams
+        let maxLength = this.chart.data.labels.length;
+        
+        // Also check individual datastream lengths
+        this.activeDatastreams.forEach((streamInfo) => {
+            if (streamInfo.data && streamInfo.data.length > maxLength) {
+                maxLength = streamInfo.data.length;
+            }
+        });
+        
+        return maxLength;
     }
 }

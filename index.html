@@ -38,7 +38,7 @@
                     <h3>🎛️ Audio Mixer</h3>
                     <p class="panel-description">Choose how each sensor maps to sound.</p>
                     <div class="master-controls">
-                        <button id="master-play">▶️ Play All</button>
+                        <button id="master-play">▶ Play All</button>
                         <label>Master Volume: <input type="range" id="master-volume" min="0" max="100" value="50"></label>
                         <label>Beat Tempo: <input type="range" id="beat-tempo" min="60" max="200" value="120" step="5"> <span id="tempo-display">120</span> BPM</label>
                         <label>Playback Speed: <input type="range" id="playback-speed" min="100" max="2000" value="1000" step="100"></label>
@@ -140,6 +140,21 @@
             </div>
         </div>
     </div>
+
+    <!-- Footer with resource links -->
+    <footer>
+        <div class="footer-content">
+            <h4>🔗 Related Resources</h4>
+            <div class="resource-links">
+                <a href="https://sensors.bgs.ac.uk/" target="_blank" rel="noopener noreferrer">
+                    📊 BGS Sensor Data Page
+                </a>
+                <a href="https://pautva-bgs-sensor-data-explorer.streamlit.app/" target="_blank" rel="noopener noreferrer">
+                    🔍 Sensor Data Explorer
+                </a>
+            </div>
+        </div>
+    </footer>
 
     <script src="js/dataService.js"></script>
     <script src="js/mixerVisualizer.js"></script>

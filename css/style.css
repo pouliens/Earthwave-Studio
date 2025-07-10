@@ -181,7 +181,7 @@ header p {
 }
 
 .master-controls button.playing {
-  background: #ff4444;
+  background: #2196f3;
 }
 
 .master-controls label {
@@ -250,7 +250,7 @@ header p {
 }
 
 .channel-controls button.playing {
-  background: #ff4444;
+  background: #2196f3;
 }
 
 .remove-button {
@@ -525,11 +525,11 @@ header p {
 }
 
 .control-btn.pause-btn {
-  background: #ff9800;
+  background: #2196f3;
 }
 
 .control-btn.pause-btn:hover {
-  background: #e68900;
+  background: #1976d2;
 }
 
 .control-btn.stop-btn {
@@ -797,5 +797,68 @@ header p {
     .step-number {
       height: 30px;
     }
+  }
+}
+
+.error-status {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.simulation-status {
+  color: #ff9800;
+  font-weight: 500;
+}
+
+/* Footer */
+footer {
+  margin-top: 40px;
+  padding: 20px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.footer-content h4 {
+  color: white;
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.resource-links {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.resource-links a {
+  color: white;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.resource-links a:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .resource-links {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .resource-links a {
+    width: 200px;
+    text-align: center;
   }
 }

@@ -113,12 +113,15 @@ class MixerApp {
         });
     }
 
-    addDatastream(datastreamId) {
+    async addDatastream(datastreamId) {
         const datastream = this.availableDatastreams.get(datastreamId);
         if (!datastream || datastream.isAdded) return;
 
         // Mark as added
         datastream.isAdded = true;
+        
+        // Update status to show loading
+        this.updateStatus(`Loading data for ${datastream.name}...`);
         
         // Add to visualizer
         this.visualizer.addDatastream(datastreamId, datastream.name, datastream.unit);
@@ -126,25 +129,48 @@ class MixerApp {
         // Create audio channel
         this.sonifier.createChannel(datastreamId, datastream.name);
         
-        // Load historical data if available
-        const currentData = this.dataService.getCurrentDataWithHistory();
-        const sensorData = currentData[datastream.sensorKey];
-        if (sensorData && sensorData.historical && sensorData.historical[datastream.parameter]) {
-            this.visualizer.loadHistoricalData(datastreamId, sensorData.historical[datastream.parameter]);
+        // Load synchronized historical data (last 50 real readings)
+        try {
+            const datastreamNumericId = this.getDatastreamId(datastream.sensorKey, datastream.parameter);
+            console.log(`🔍 Attempting to load data for: ${datastream.sensorKey}_${datastream.parameter}`);
+            console.log(`🔗 Mapped to BGS datastream ID: ${datastreamNumericId}`);
             
-            // Set value range for sonification
-            const values = sensorData.historical[datastream.parameter].map(entry => entry.value);
-            const minValue = Math.min(...values);
-            const maxValue = Math.max(...values);
-            this.sonifier.setChannelValueRange(datastreamId, minValue, maxValue);
+            if (datastreamNumericId) {
+                console.log(`📊 Loading last 50 observations for ${datastreamId} (BGS API ID: ${datastreamNumericId})`);
+                const historicalData = await this.dataService.fetchSynchronizedHistoricalData(datastreamNumericId, 50);
+                
+                if (historicalData && historicalData.length > 0) {
+                    console.log(`✅ Successfully loaded ${historicalData.length} real observations for ${datastreamId}`);
+                    console.log(`📅 Data range: ${historicalData[0].timestamp} to ${historicalData[historicalData.length-1].timestamp}`);
+                    
+                    // Load data into visualizer
+                    this.visualizer.loadHistoricalData(datastreamId, historicalData);
+                    
+                    // Set value range for sonification based on real data
+                    const values = historicalData.map(entry => entry.value);
+                    const minValue = Math.min(...values);
+                    const maxValue = Math.max(...values);
+                    console.log(`📈 Value range: ${minValue.toFixed(2)} to ${maxValue.toFixed(2)}`);
+                    this.sonifier.setChannelValueRange(datastreamId, minValue, maxValue);
+                    
+                    this.updateStatus(`Added ${datastream.name} (${historicalData.length} real observations)`);
+                } else {
+                    console.log(`❌ No historical data available for ${datastreamId}`);
+                    this.updateStatus(`Added ${datastream.name} (no historical data available)`);
+                }
+            } else {
+                console.error(`❌ No BGS datastream mapping found for ${datastream.sensorKey}_${datastream.parameter}`);
+                this.updateStatus(`Added ${datastream.name} (no data source configured)`);
+            }
+        } catch (error) {
+            console.error(`💥 Error loading historical data for ${datastreamId}:`, error);
+            this.updateStatus(`Added ${datastream.name} (error loading data)`);
         }
         
         // Update interface
         this.renderLibrary();
         this.renderMixerChannels();
         this.visualizer.updateActiveCount();
-        
-        this.updateStatus(`Added ${datastream.name}`);
     }
 
     removeDatastream(datastreamId) {
@@ -197,10 +223,10 @@ class MixerApp {
                     <div class="channel-controls">
                         <button onclick="window.mixerApp.toggleChannel('${datastreamId}')" 
                                 class="${channel && channel.isPlaying ? 'playing' : ''}">
-                            ${channel && channel.isPlaying ? '⏸️' : '▶️'}
+                            ${channel && channel.isPlaying ? '⏸' : '▶'}
                         </button>
                         <button onclick="window.mixerApp.removeDatastream('${datastreamId}')" 
-                                class="remove-button">❌</button>
+                                class="remove-button">✕</button>
                     </div>
                 </div>
                 <div class="channel-settings">
@@ -262,7 +288,7 @@ class MixerApp {
     playAll() {
         this.sonifier.startAll();
         this.isPlaying = true;
-        this.masterPlayButton.textContent = '⏸️ Stop All';
+        this.masterPlayButton.textContent = '⏸ Stop All';
         this.masterPlayButton.classList.add('playing');
         this.renderMixerChannels();
         
@@ -276,7 +302,7 @@ class MixerApp {
     stopAll() {
         this.sonifier.stopAll();
         this.isPlaying = false;
-        this.masterPlayButton.textContent = '▶️ Play All';
+        this.masterPlayButton.textContent = '▶ Play All';
         this.masterPlayButton.classList.remove('playing');
         this.renderMixerChannels();
         
@@ -311,12 +337,25 @@ class MixerApp {
 
     updateSonificationFromPlayback() {
         const currentIndex = this.visualizer.getPlaybackPosition();
-        const totalLength = this.visualizer.getDataLength();
         
-        // Update playback position display
+        // Calculate the actual maximum data length among active datastreams
+        let maxDataLength = 0;
+        let activeDatastreamCount = 0;
+        
+        this.availableDatastreams.forEach((datastream, datastreamId) => {
+            if (!datastream.isAdded) return;
+            
+            activeDatastreamCount++;
+            const streamInfo = this.visualizer.activeDatastreams.get(datastreamId);
+            if (streamInfo && streamInfo.data) {
+                maxDataLength = Math.max(maxDataLength, streamInfo.data.length);
+            }
+        });
+        
+        // Update playback position display with actual max length
         const positionElement = document.getElementById('playback-position');
         if (positionElement) {
-            positionElement.textContent = `${currentIndex + 1} / ${totalLength}`;
+            positionElement.textContent = `${currentIndex + 1} / ${maxDataLength}`;
         }
         
         // Update each active datastream with the value at current playback position
@@ -324,11 +363,37 @@ class MixerApp {
             if (!datastream.isAdded) return;
 
             const streamInfo = this.visualizer.activeDatastreams.get(datastreamId);
-            if (streamInfo && streamInfo.data && streamInfo.data[currentIndex]) {
-                const value = streamInfo.data[currentIndex].value;
-                this.sonifier.updateChannelValue(datastreamId, value);
+            if (streamInfo && streamInfo.data) {
+                // Use the data if available at current index, otherwise use the last available value
+                const dataIndex = Math.min(currentIndex, streamInfo.data.length - 1);
+                if (streamInfo.data[dataIndex]) {
+                    const value = streamInfo.data[dataIndex].value;
+                    this.sonifier.updateChannelValue(datastreamId, value);
+                    
+                    // Update the displayed current value in real-time
+                    this.updateCurrentValueDisplay(datastreamId, value, datastream.unit);
+                }
             }
         });
+    }
+
+    updateCurrentValueDisplay(datastreamId, value, unit) {
+        // Find and update the current value display for this specific datastream
+        const channelElement = document.getElementById(`channel-${datastreamId}`);
+        if (channelElement) {
+            const currentValueElement = channelElement.querySelector('.current-value');
+            if (currentValueElement) {
+                // Add a visual indicator that this is live playback data
+                currentValueElement.textContent = `Current: ${value.toFixed(2)} ${unit} 🔊`;
+                
+                // Remove the indicator after a short time to show it's updating
+                setTimeout(() => {
+                    if (currentValueElement) {
+                        currentValueElement.textContent = `Current: ${value.toFixed(2)} ${unit}`;
+                    }
+                }, 200);
+            }
+        }
     }
 
     startDataCollection() {
@@ -337,6 +402,9 @@ class MixerApp {
     }
 
     handleNewData(data) {
+        // Check if we're in simulation mode
+        const isSimulation = this.dataService.isUsingSimulation();
+        
         // Update active datastreams with new values
         this.availableDatastreams.forEach((datastream, datastreamId) => {
             if (!datastream.isAdded) return;
@@ -354,8 +422,13 @@ class MixerApp {
             }
         });
 
-        // Update mixer channel displays
+        // Update displays
         this.renderMixerChannels();
+        
+        // Update status if in simulation mode
+        if (isSimulation) {
+            this.updateStatus('<span class="simulation-status">Sensor offline - using simulation</span>');
+        }
     }
 
     formatParameterName(param) {
@@ -384,6 +457,29 @@ class MixerApp {
         return units[param] || '';
     }
 
+    getDatastreamId(sensorKey, parameter) {
+        // Map internal sensor/parameter combinations to BGS API datastream IDs
+        const datastreamMapping = {
+            'site1_temperature': 94,
+            'site1_methane': 103,
+            'site1_co2': 110,
+            'site1_oxygen': 109,
+            'site1_pressure': 102,
+            'site5_temperature': 108,
+            'site5_methane': 100,
+            'site5_co2': 93,
+            'site5_oxygen': 101,
+            'site5_pressure': 104,
+            'barometer_temperature': 79,
+            'barometer_pressure': 80,
+            'gga08_conductivity': 13,
+            'gga08_tds': 38
+        };
+        
+        const key = `${sensorKey}_${parameter}`;
+        return datastreamMapping[key] || null;
+    }
+
     formatMappingName(mapping) {
         const names = {
             melody: 'Melody - Lead musical line',
@@ -395,8 +491,9 @@ class MixerApp {
         return names[mapping] || mapping;
     }
 
+
     updateStatus(message) {
-        this.statusElement.textContent = message;
+        this.statusElement.innerHTML = message;
         console.log(`Status: ${message}`);
     }
 
