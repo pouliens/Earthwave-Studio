@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasClam Data Sonification Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GasClam Data Sonification Dashboard</h1>
+            <p>Real-time sensor data visualization and sonification</p>
+        </header>
+
+        <div class="controls">
+            <button id="playPause">▶️ Play</button>
+            <label for="volume">Volume: <input type="range" id="volume" min="0" max="100" value="50"></label>
+            <span id="status">Ready</span>
+        </div>
+
+        <div class="sonification-info">
+            <h3>Sonification Mapping</h3>
+            <div class="mapping-grid">
+                <div class="mapping-item">
+                    <strong>Pitch:</strong> Temperature (10-30°C → 200-800Hz)
+                </div>
+                <div class="mapping-item">
+                    <strong>Rhythm:</strong> Methane (0-5% → 60-120 BPM)
+                </div>
+                <div class="mapping-item">
+                    <strong>Timbre:</strong> Carbon Dioxide (different waveforms)
+                </div>
+                <div class="mapping-item">
+                    <strong>Volume:</strong> Oxygen (15-25% → soft-loud)
+                </div>
+                <div class="mapping-item">
+                    <strong>Panning:</strong> Barometric Pressure (left-right)
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="sensor-panel">
+                <h3>BGS Site 1 GasClam</h3>
+                <div class="sensor-data">
+                    <div class="data-item">
+                        <span class="label">Temperature:</span>
+                        <span id="site1-temp" class="value">--</span>°C
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Methane:</span>
+                        <span id="site1-methane" class="value">--</span>%
+                    </div>
+                    <div class="data-item">
+                        <span class="label">CO2:</span>
+                        <span id="site1-co2" class="value">--</span>%
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Oxygen:</span>
+                        <span id="site1-oxygen" class="value">--</span>%
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Pressure:</span>
+                        <span id="site1-pressure" class="value">--</span>mbar
+                    </div>
+                </div>
+                <canvas id="site1-chart"></canvas>
+            </div>
+
+            <div class="sensor-panel">
+                <h3>BGS Site 5 GasClam</h3>
+                <div class="sensor-data">
+                    <div class="data-item">
+                        <span class="label">Temperature:</span>
+                        <span id="site5-temp" class="value">--</span>°C
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Methane:</span>
+                        <span id="site5-methane" class="value">--</span>%
+                    </div>
+                    <div class="data-item">
+                        <span class="label">CO2:</span>
+                        <span id="site5-co2" class="value">--</span>%
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Oxygen:</span>
+                        <span id="site5-oxygen" class="value">--</span>%
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Pressure:</span>
+                        <span id="site5-pressure" class="value">--</span>mbar
+                    </div>
+                </div>
+                <canvas id="site5-chart"></canvas>
+            </div>
+
+            <div class="sensor-panel">
+                <h3>BGS GGERFS Barometer</h3>
+                <div class="sensor-data">
+                    <div class="data-item">
+                        <span class="label">Air Temperature:</span>
+                        <span id="barometer-temp" class="value">--</span>°C
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Pressure:</span>
+                        <span id="barometer-pressure" class="value">--</span>mbar
+                    </div>
+                </div>
+                <canvas id="barometer-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="audio-visual">
+            <h3>Audio Visualization</h3>
+            <div class="audio-indicators">
+                <div class="indicator">
+                    <span class="label">Pitch (Hz):</span>
+                    <span id="pitch-value">--</span>
+                </div>
+                <div class="indicator">
+                    <span class="label">BPM:</span>
+                    <span id="bpm-value">--</span>
+                </div>
+                <div class="indicator">
+                    <span class="label">Waveform:</span>
+                    <span id="waveform-value">--</span>
+                </div>
+            </div>
+            <canvas id="audio-visualizer"></canvas>
+        </div>
+    </div>
+
+    <script src="js/dataService.js"></script>
+    <script src="js/visualizer.js"></script>
+    <script src="js/sonifier.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
