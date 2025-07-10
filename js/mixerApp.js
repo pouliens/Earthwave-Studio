@@ -386,14 +386,11 @@ class MixerApp {
 
     formatMappingName(mapping) {
         const names = {
-            pitch: 'Pitch/Frequency',
-            melody: 'Melody (Musical)',
-            bass: 'Bass Line',
-            harmony: 'Harmony',
-            volume: 'Volume',
-            filter: 'Filter/Timbre',
-            panning: 'Stereo Panning',
-            rhythm: 'Rhythm/Delay'
+            melody: 'Melody - Lead musical line',
+            bass: 'Bass - Deep foundation tones',
+            harmony: 'Harmony - Rich accompaniment',
+            ambient: 'Ambient - Atmospheric pads',
+            bells: 'Bells - Sparkling metallic tones'
         };
         return names[mapping] || mapping;
     }

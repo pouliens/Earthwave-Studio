@@ -365,7 +365,7 @@ class BeatMaker {
             const soundLabel = document.createElement('div');
             soundLabel.className = 'sound-label';
             soundLabel.textContent = sound.name;
-            soundLabel.style.borderLeft = `4px solid ${sound.color}`;
+            // Removed borderLeft styling
             row.appendChild(soundLabel);
 
             // Step buttons

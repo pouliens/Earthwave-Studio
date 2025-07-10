@@ -5,9 +5,9 @@ class MixerSonifier {
         this.activeChannels = new Map();
         this.isPlaying = false;
         
-        // Available audio mappings
+        // Available audio mappings - simplified and distinct
         this.audioMappings = [
-            'pitch', 'volume', 'filter', 'panning', 'rhythm', 'melody', 'bass', 'harmony'
+            'melody', 'bass', 'harmony', 'ambient', 'bells'
         ];
 
         // Musical scales
@@ -43,7 +43,7 @@ class MixerSonifier {
         }
     }
 
-    createChannel(datastreamId, name, audioMapping = 'pitch') {
+    createChannel(datastreamId, name, audioMapping = 'melody') {
         if (this.activeChannels.has(datastreamId) || !this.audioContext) return null;
 
         const oscillator = this.audioContext.createOscillator();
@@ -145,55 +145,51 @@ class MixerSonifier {
         const normalizedValue = this.normalizeValue(value, channel.minValue, channel.maxValue);
 
         switch (channel.audioMapping) {
-            case 'pitch':
-                const frequency = 200 + (normalizedValue * 600); // 200-800 Hz
-                channel.oscillator.frequency.setTargetAtTime(frequency, now, 0.1);
-                break;
-
             case 'melody':
+                // Lead melodic line with clear, bright tone
                 const note = this.valueToNote(normalizedValue);
                 const melodyFreq = this.noteToFrequency(note);
                 channel.oscillator.frequency.setTargetAtTime(melodyFreq, now, 0.1);
                 channel.oscillator.type = 'triangle';
+                channel.filter.frequency.setTargetAtTime(3000, now, 0.1); // Bright filter
                 break;
 
             case 'bass':
-                const bassNote = this.valueToNote(normalizedValue, -2); // Two octaves lower
+                // Deep bass foundation, two octaves lower
+                const bassNote = this.valueToNote(normalizedValue, -2);
                 const bassFreq = this.noteToFrequency(bassNote);
                 channel.oscillator.frequency.setTargetAtTime(bassFreq, now, 0.1);
                 channel.oscillator.type = 'square';
+                channel.filter.frequency.setTargetAtTime(400, now, 0.1); // Low-pass for bass
                 break;
 
             case 'harmony':
-                const harmonyNote = this.valueToNote(normalizedValue, 1); // One octave higher
+                // Harmonic accompaniment, one octave higher with rich tone
+                const harmonyNote = this.valueToNote(normalizedValue, 1);
                 const harmonyFreq = this.noteToFrequency(harmonyNote);
                 channel.oscillator.frequency.setTargetAtTime(harmonyFreq, now, 0.1);
                 channel.oscillator.type = 'sawtooth';
+                channel.filter.frequency.setTargetAtTime(1500, now, 0.1); // Mid-range filter
                 break;
 
-            case 'volume':
-                const volume = Math.max(0.1, normalizedValue) * channel.volume;
-                channel.gainNode.gain.setTargetAtTime(volume, now, 0.1);
+            case 'ambient':
+                // Atmospheric pads that create space and depth
+                const ambientNote = this.valueToNote(normalizedValue, 0);
+                const ambientFreq = this.noteToFrequency(ambientNote);
+                channel.oscillator.frequency.setTargetAtTime(ambientFreq, now, 0.3); // Slower changes
+                channel.oscillator.type = 'sine';
+                channel.filter.frequency.setTargetAtTime(800 + (normalizedValue * 1200), now, 0.5); // Evolving filter
+                channel.delayGain.gain.setTargetAtTime(0.4, now, 0.1); // More delay feedback
                 break;
 
-            case 'filter':
-                const filterFreq = 200 + (normalizedValue * 2000); // 200-2200 Hz
-                channel.filter.frequency.setTargetAtTime(filterFreq, now, 0.1);
-                // Add resonance variation
-                const resonance = 1 + (normalizedValue * 10);
-                channel.filter.Q.value = resonance;
-                break;
-
-            case 'panning':
-                const pan = (normalizedValue - 0.5) * 2; // -1 to 1
-                channel.pannerNode.pan.setTargetAtTime(pan, now, 0.1);
-                break;
-
-            case 'rhythm':
-                // Rhythm affects volume pulsing and delay time
-                this.updateRhythm(channel, normalizedValue);
-                const delayTime = 0.1 + (normalizedValue * 0.4); // 0.1-0.5 seconds
-                channel.delayNode.delayTime.setTargetAtTime(delayTime, now, 0.1);
+            case 'bells':
+                // Sparkling metallic tones for data peaks and accents
+                const bellNote = this.valueToNote(normalizedValue, 2); // Two octaves higher
+                const bellFreq = this.noteToFrequency(bellNote);
+                channel.oscillator.frequency.setTargetAtTime(bellFreq, now, 0.05); // Quick attack
+                channel.oscillator.type = 'triangle';
+                channel.filter.frequency.setTargetAtTime(5000, now, 0.1); // Very bright
+                channel.filter.Q.setTargetAtTime(8, now, 0.1); // High resonance for metallic sound
                 break;
         }
     }
@@ -247,13 +243,8 @@ class MixerSonifier {
             channel.isStarted = true;
         }
 
-        // Set initial volume based on mapping
-        if (channel.audioMapping === 'volume') {
-            const normalizedValue = this.normalizeValue(channel.currentValue, channel.minValue, channel.maxValue);
-            channel.gainNode.gain.value = normalizedValue * channel.volume;
-        } else {
-            channel.gainNode.gain.value = channel.volume;
-        }
+        // Set initial volume 
+        channel.gainNode.gain.value = channel.volume;
 
         channel.isPlaying = true;
     }
@@ -278,7 +269,7 @@ class MixerSonifier {
 
         channel.volume = Math.max(0, Math.min(1, volume));
         
-        if (channel.isPlaying && channel.audioMapping !== 'volume') {
+        if (channel.isPlaying) {
             channel.gainNode.gain.setTargetAtTime(
                 channel.volume, 
                 this.audioContext.currentTime, 
@@ -302,24 +293,7 @@ class MixerSonifier {
         // Reset some parameters
         if (this.audioContext) {
             const now = this.audioContext.currentTime;
-            
-            switch (audioMapping) {
-                case 'pitch':
-                    channel.oscillator.frequency.setTargetAtTime(440, now, 0.1);
-                    channel.gainNode.gain.setTargetAtTime(channel.volume, now, 0.1);
-                    break;
-                case 'volume':
-                    channel.gainNode.gain.setTargetAtTime(0.1, now, 0.1);
-                    break;
-                case 'filter':
-                    channel.filter.frequency.setTargetAtTime(1000, now, 0.1);
-                    channel.gainNode.gain.setTargetAtTime(channel.volume, now, 0.1);
-                    break;
-                case 'panning':
-                    channel.pannerNode.pan.setTargetAtTime(0, now, 0.1);
-                    channel.gainNode.gain.setTargetAtTime(channel.volume, now, 0.1);
-                    break;
-            }
+            channel.gainNode.gain.setTargetAtTime(channel.volume, now, 0.1);
         }
 
         // Apply current value with new mapping
