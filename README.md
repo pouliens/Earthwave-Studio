@@ -2,6 +2,10 @@
 
 An interactive web application that transforms real-time sensor data from BGS GasClam sensors into musical visualizations and audio experiences.
 
+## Live version
+
+https://pouliens.github.io/Earthwave-Studio/
+
 ## Features
 
 - **Real-time Data Visualization**: Live charts displaying sensor readings from 3 BGS sensors
